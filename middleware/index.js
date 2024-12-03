@@ -1,7 +1,7 @@
 import { generateToken, verifyToken } from "../auth/index.js";
 
 function middlewareAuth(req, res, next) {
-  const token = req.cookies["access_token"];
+  const token = req.cookies["access_token"] || req.headers["Authorization"];
   const userId = verifyToken(token);
   if (!userId)
     return res.status(401).json({ success: false, message: "Unauthorized" });
