@@ -19,3 +19,4 @@ benchmarks/graphs
 !.env.example
 
 prisma/migrations
+
