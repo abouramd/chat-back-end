@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // Change this to your database provider
+  url      = env("DATABASE_URL")
+}
+
+model Users {
+  id          Int       @id @default(autoincrement())
+  name        String
+  password    String
+  type        String
+  active      Boolean
+  lastActive  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  RoomConnections RoomConnections[]
+  UsersConversations UsersConversations[]
+  Messages    Messages[]
+}
+
+model Rooms {
+  id            Int       @id @default(autoincrement())
+  name          String
+  type          String
+  conversationId Int      @unique
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  RoomConnections RoomConnections[]
+}
+
+model Conversations {
+  id          Int       @id @default(autoincrement())
+  type        String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  UsersConversations UsersConversations[]
+  Messages    Messages[]
+}
+
+model Messages {
+  id             Int       @id @default(autoincrement())
+  userId         Int
+  conversationId Int
+  content        String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  status         String
+  User           Users      @relation(fields: [userId], references: [id])
+  Conversation   Conversations @relation(fields: [conversationId], references: [id])
+}
+
+model RoomConnections {
+  userId     Int
+  roomId     Int
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  User       Users      @relation(fields: [userId], references: [id])
+  Room       Rooms      @relation(fields: [roomId], references: [id])
+  @@id([userId, roomId]) // Composite primary key
+}
+
+model UsersConversations {
+  userId         Int
+  conversationId Int
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  User           Users      @relation(fields: [userId], references: [id])
+  Conversation   Conversations @relation(fields: [conversationId], references: [id])
+  @@id([userId, conversationId]) // Composite primary key
+}
