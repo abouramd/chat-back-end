@@ -20,9 +20,9 @@ const router = express.Router();
  *           schema:
  *             type: object
  *             properties:
- *               email:
+ *               username:
  *                 type: string
- *                 example: "test@example.com"
+ *                 example: "username"
  *               password:
  *                 type: string
  *                 example: "password123"
@@ -45,9 +45,9 @@ router.post("/login", async (req, res) => {
         .json({ success: false, message: error.details[0].message });
     }
 
-    const { email, password } = req.body;
+    const { username, password } = req.body;
 
-    const user = await prisma.users.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({ where: { username } });
     if (!user) {
       return res
         .status(404)
@@ -67,13 +67,11 @@ router.post("/login", async (req, res) => {
       httpOnly: true,
     });
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "You have logged successfully.",
-        accessToken: token,
-      });
+    res.status(200).json({
+      success: true,
+      message: "You have logged successfully.",
+      accessToken: token,
+    });
   } catch (error) {
     console.error("Error loging user:", error);
     res.status(500).json({
@@ -101,6 +99,9 @@ router.post("/login", async (req, res) => {
  *               email:
  *                 type: string
  *                 example: "test@example.com"
+ *               username:
+ *                 type: string
+ *                 example: "username"
  *               name:
  *                 type: string
  *                 example: "Test User"
@@ -127,21 +128,31 @@ router.post("/register", async (req, res) => {
         .json({ success: false, message: error.details[0].message });
     }
 
-    const { email, name, password, confirmPassword } = req.body;
+    const { email, username, name, password, confirmPassword } = req.body;
 
-    const existingUser = await prisma.users.findUnique({ where: { email } });
-    if (existingUser) {
+    const existingEmail = await prisma.user.findUnique({ where: { email } });
+    if (existingEmail) {
       return res
         .status(400)
         .json({ success: false, message: "Email is already in use." });
     }
 
+    const existingUsername = await prisma.user.findUnique({
+      where: { username },
+    });
+    if (existingUsername) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Username is already in use." });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await prisma.users.create({
+    const user = await prisma.user.create({
       data: {
         name,
         email,
+        username,
         password: hashedPassword,
       },
     });
@@ -153,13 +164,11 @@ router.post("/register", async (req, res) => {
       httpOnly: true,
     });
 
-    res
-      .status(201)
-      .json({
-        success: true,
-        message: "You have registered successfully.",
-        accessToken: token,
-      });
+    res.status(201).json({
+      success: true,
+      message: "You have registered successfully.",
+      accessToken: token,
+    });
   } catch (error) {
     console.error("Error registering user:", error);
     res.status(500).json({
