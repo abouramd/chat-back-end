@@ -72,7 +72,7 @@ router.post("/login", async (req, res) => {
       .json({
         success: true,
         message: "You have logged successfully.",
-        access_token: token,
+        accessToken: token,
       });
   } catch (error) {
     console.error("Error loging user:", error);
@@ -158,7 +158,7 @@ router.post("/register", async (req, res) => {
       .json({
         success: true,
         message: "You have registered successfully.",
-        access_token: token,
+        accessToken: token,
       });
   } catch (error) {
     console.error("Error registering user:", error);
