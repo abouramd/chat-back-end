@@ -2,6 +2,7 @@ import express from 'express';
 import cookieParser from 'cookie-parser';
 import auth from './routes/auth.js';
 import user from './routes/user.js';
+import chat from './routes/chat.js';
 import { configDotenv } from 'dotenv';
 import middlewareAuth from './middleware/index.js';
 import swaggerSpec from "./utils/swaggerOptions.js"; // Import Swagger config
@@ -20,11 +21,14 @@ app.use(express.json({ limit: "10mb" }));
 
 // Serve Swagger UI at /api-docs
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-
+app.get("/", (req, res) => {
+  res.redirect("api-docs");
+});
 
 app.use('/auth', auth);
 app.use(middlewareAuth);
 app.use('/user', user);
+app.use('/chat', chat);
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);

@@ -23,13 +23,14 @@ const router = express.Router();
  */
 router.get("/data", async (req, res) => {
   try {
-    const userId = +req.userId || 0;
+    const userId = req.userId || "";
     console.log(userId, typeof userId);
-    const user = await prisma.users.findUnique({
+    const user = await prisma.user.findUnique({
       select: {
         id: true,
         name: true,
         email: true,
+        username: true,
         // active: true,
         // lastActive: true,
         createdAt: true,
@@ -91,11 +92,12 @@ router.get("/all", async (req, res) => {
     const take = 10;
     const skip = Number(page) * take || 0;
 
-    const users = await prisma.users.findMany({
+    const users = await prisma.user.findMany({
       select: {
         id: true,
         name: true,
         email: true,
+        username: true,
         // active: true,
         // lastActive: true,
         createdAt: true,
@@ -158,16 +160,26 @@ router.get("/search", async (req, res) => {
     const take = 10;
     const skip = Number(page) * take || 0;
 
-    const users = await prisma.users.findMany({
+    const users = await prisma.user.findMany({
       where: {
-        name: {
-          contains: name,
-        },
+        OR: [
+          {
+            name: {
+              contains: name,
+            },
+          },
+          {
+            username: {
+              contains: name,
+            },
+          },
+        ],
       },
       select: {
         id: true,
         name: true,
         email: true,
+        username: true,
         // active: true,
         // lastActive: true,
         createdAt: true,
@@ -203,7 +215,7 @@ router.get("/search", async (req, res) => {
  *       - in: path
  *         name: userId
  *         schema:
- *           type: integer
+ *           type: string
  *         required: true
  *         description: ID of the user to get
  *     tags:
@@ -220,14 +232,14 @@ router.get("/search", async (req, res) => {
  */
 router.get("/:id", async (req, res) => {
   try {
-    const { id } = req.params;
-    const userId = +id || 0;
+    const  userId  = req?.params?.id || "";
     console.log(userId, typeof userId);
-    const user = await prisma.users.findUnique({
+    const user = await prisma.user.findUnique({
       select: {
         id: true,
         name: true,
         email: true,
+        username: true,
         // active: true,
         // lastActive: true,
         createdAt: true,
