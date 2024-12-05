@@ -41,4 +41,24 @@ const chatroomSchema = Joi.object({
   }),
 });
 
-export { registerSchema, loginSchema, chatroomSchema };
+const sendMessageSchema = Joi.object({
+  roomId: Joi.string().min(1).required().messages({
+    "string.min": "roomId must be at least 1 characters long.",
+    "any.required": "roomId is required.",
+  }),
+  message: Joi.string().min(1).required().messages({
+    "string.min": "message must be at least 1 characters long.",
+    "any.required": "message is required.",
+  }),
+});
+
+
+const editMessageSchema = Joi.object({
+  message: Joi.string().min(1).required().messages({
+    "string.min": "message must be at least 1 characters long.",
+    "any.required": "message is required.",
+  }),
+});
+
+
+export { registerSchema, loginSchema, chatroomSchema, sendMessageSchema, editMessageSchema };

@@ -21,6 +21,7 @@ const router = express.Router();
  *       401:
  *         description: unauthorized access
  */
+
 router.get("/data", async (req, res) => {
   try {
     const userId = req.userId || "";
@@ -31,12 +32,8 @@ router.get("/data", async (req, res) => {
         name: true,
         email: true,
         username: true,
-        // active: true,
-        // lastActive: true,
         createdAt: true,
         updatedAt: true,
-        // UsersConversations: true,
-        // Messages: true,
       },
       where: { id: userId },
     });
@@ -98,12 +95,8 @@ router.get("/all", async (req, res) => {
         name: true,
         email: true,
         username: true,
-        // active: true,
-        // lastActive: true,
         createdAt: true,
         updatedAt: true,
-        // UsersConversations: true,
-        // Messages: true,
       },
       skip,
       take,
@@ -180,12 +173,8 @@ router.get("/search", async (req, res) => {
         name: true,
         email: true,
         username: true,
-        // active: true,
-        // lastActive: true,
         createdAt: true,
         updatedAt: true,
-        // UsersConversations: true,
-        // Messages: true,
       },
       skip,
       take,
@@ -232,7 +221,7 @@ router.get("/search", async (req, res) => {
  */
 router.get("/:id", async (req, res) => {
   try {
-    const  userId  = req?.params?.id || "";
+    const userId = req?.params?.id || "";
     console.log(userId, typeof userId);
     const user = await prisma.user.findUnique({
       select: {
@@ -240,12 +229,8 @@ router.get("/:id", async (req, res) => {
         name: true,
         email: true,
         username: true,
-        // active: true,
-        // lastActive: true,
         createdAt: true,
         updatedAt: true,
-        // UsersConversations: true,
-        // Messages: true,
       },
       where: { id: userId },
     });
