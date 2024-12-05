@@ -96,6 +96,30 @@ router.put("/:id", editMessage);
 
 router.delete("/:id", deleteMessage);
 
+/**
+  * @swagger
+  * /message/{id}:
+  *   get:
+  *     summary: Get Message
+  *     description: Get a message
+  *     tags:
+  *       - Message
+  *     parameters:
+  *       - in: path
+  *         name: id
+  *         schema:
+  *           type: string
+  *         required: true
+  *         description: ID of the message to get
+  *     responses:
+  *       200:
+  *         description: Message retrieved
+  *       500:
+  *         description: Internal server error
+  */
+
+router.get("/:id", getMessage);
+
 async function createMessage(req, res) {
   try {
     const { error } = sendMessageSchema.validate(req.body);
@@ -227,6 +251,37 @@ async function deleteMessage(req, res) {
     });
   } catch (error) {
     console.error("Error deleting message:", error);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred. Please try again later.",
+    });
+  }
+}
+
+async function getMessage(req, res) {
+  try {
+    const { id } = req.params;
+
+    const userId = req.userId || "";
+
+    const message = await prisma.message.findUnique({
+      where: { id , senderId: userId},
+    });
+
+    if (!message) {
+      return res.status(404).json({
+        success: false,
+        message: "Message not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Message retrieved successfully",
+      messageObject: message,
+    });
+  } catch (error) {
+    console.error("Error retrieving message:", error);
     res.status(500).json({
       success: false,
       message: "An error occurred. Please try again later.",
