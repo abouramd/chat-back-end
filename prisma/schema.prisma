@@ -27,13 +27,13 @@ model User {
 }
 
 model Chatroom {
-  id         String    @id @default(uuid())
-  name       String
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  members    User[]    @relation("UserChatrooms")
-  messages   Message[]
-  files      File[]
+  id        String    @id @default(uuid())
+  name      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  members   User[]    @relation("UserChatrooms")
+  messages  Message[]
+  files     File[]
 }
 
 model Message {

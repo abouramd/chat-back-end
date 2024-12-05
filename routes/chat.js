@@ -177,20 +177,45 @@ router.get("/all", async (req, res) => {
 
 router.post("/:id/add", async (req, res) => {
   try {
-    const roomId = +req.params.id || "";
-    const userId = req.body.userId || "";
+    const roomId = req.params.id || "";
+    const userId = req.userId || "";
 
     const username = req?.body?.username || "";
 
-    const room = await prisma.chatroom.update({
+    console.log(username);
+
+    const user = await prisma.user.findUnique({
+      where: {
+        username,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Added user not found.",
+      });
+    }
+
+    const me = await prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
+
+    if (!me) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    const room = await prisma.chatroom.findUnique({
       where: {
         id: roomId,
         members: {
           some: { id: userId }, // Check if the user exists in the members list
         },
-      },
-      data: {
-        members: { connect: { username: username } },
       },
     });
 
@@ -201,9 +226,106 @@ router.post("/:id/add", async (req, res) => {
       });
     }
 
+    await prisma.chatroom.update({
+      where: {
+        id: room.id,
+        members: {
+          some: { id: me.id }, // Check if the user exists in the members list
+        },
+      },
+      data: {
+        members: { connect: { id: user.id } },
+      },
+    });
+
     res.status(200).json({
       success: true,
-      message: "Successfully retrieved add user to chat room",
+      message: "Successfully add user to chat room",
+    });
+  } catch (error) {
+    console.error("Error loging user:", error);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred. Please try again later.",
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /chat/{id}/leave:
+ *   get:
+ *     summary: leave a chat room
+ *     description: leave a chat room of the login user
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: chat room id
+ *     tags:
+ *       - Chat
+ *     responses:
+ *       200:
+ *         description: leave a chat room successfully
+ *       500:
+ *         description: Internal server error
+ *       401:
+ *         description: unauthorized access
+ *       404:
+ *         description: Not found
+ */
+
+router.get("/:id/leave", async (req, res) => {
+  try {
+    const roomId = req.params.id || "";
+    const userId = req.userId || "";
+
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    const room = await prisma.chatroom.findUnique({
+      where: {
+        id: roomId,
+        members: {
+          some: { id: user.id },
+        },
+      },
+    });
+
+    if (!room) {
+      return res.status(404).json({
+        success: false,
+        message: "Chat room not found.",
+      });
+    }
+
+    await prisma.chatroom.update({
+      where: {
+        id: room.id,
+        members: {
+          some: { id: user.id },
+        },
+      },
+      data: {
+        members: { disconnect: { id: user.id } },
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Successfully leave chat room",
     });
   } catch (error) {
     console.error("Error loging user:", error);
@@ -218,8 +340,8 @@ router.post("/:id/add", async (req, res) => {
  * @swagger
  * /chat/{id}/members:
  *   get:
- *     summary: chat room Member
- *     description: get chat room Member
+ *     summary: get chat room member
+ *     description: get chat room members
  *     parameters:
  *       - in: path
  *         name: id
@@ -231,7 +353,7 @@ router.post("/:id/add", async (req, res) => {
  *       - Chat
  *     responses:
  *       200:
- *         description: member of chat successfully
+ *         description: get member of chat successfully
  *       500:
  *         description: Internal server error
  *       401:
@@ -240,11 +362,10 @@ router.post("/:id/add", async (req, res) => {
  *         description: Not found
  */
 
-router.post("/:id/members", async (req, res) => {
+router.get("/:id/members", async (req, res) => {
   try {
-    const roomId = +req.params.id || "";
-    const userId = req.body.userId || "";
-
+    const roomId = req.params.id || "";
+    const userId = req.userId || "";
 
     const room = await prisma.chatroom.findUnique({
       where: {
@@ -279,11 +400,9 @@ router.post("/:id/members", async (req, res) => {
   }
 });
 
-
-
 /**
  * @swagger
- * /user/search:
+ * /chat/search:
  *   get:
  *     summary: search for user
  *     description: get the data with search
@@ -299,12 +418,12 @@ router.post("/:id/members", async (req, res) => {
  *         schema:
  *           type: string
  *         required: true
- *         description: name of the user to get
+ *         description: name of the chat room to get
  *     tags:
- *       - User
+ *       - Chat
  *     responses:
  *       200:
- *         description: get Users data successfully
+ *         description: get chat rooms data successfully
  *       500:
  *         description: Internal server error
  *       401:
@@ -313,36 +432,30 @@ router.post("/:id/members", async (req, res) => {
 router.get("/search", async (req, res) => {
   try {
     const { page, name = "" } = req.query;
+    const userId = req.userId || "";
+    console.log("=>>>", userId, typeof userId);
     console.log("=>>>", name, typeof name);
     console.log("=>>>", page, typeof page);
     const take = 10;
     const skip = Number(page) * take || 0;
 
-    const users = await prisma.users.findMany({
+    const rooms = await prisma.chatroom.findMany({
       where: {
         name: {
           contains: name,
         },
+        members: {
+          some: { id: userId },
+        },
       },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        // active: true,
-        // lastActive: true,
-        createdAt: true,
-        updatedAt: true,
-        // UsersConversations: true,
-        // Messages: true,
-      },
-      skip,
       take,
+      skip,
     });
 
     res.status(200).json({
       success: true,
-      message: "Successfully retrieved users search data",
-      users: users,
+      message: "Successfully reveived chat rooms search data",
+      rooms: rooms,
     });
   } catch (error) {
     console.error("Error loging user:", error);
@@ -355,60 +468,79 @@ router.get("/search", async (req, res) => {
 
 /**
  * @swagger
- * /user/{userId}:
+ * /chat/{id}/messages:
  *   get:
- *     summary: user data
- *     description: get the data with Id
+ *     summary: get chat room member
+ *     description: get chat room members
  *     parameters:
  *       - in: path
- *         name: userId
+ *         name: id
  *         schema:
- *           type: integer
+ *           type: string
  *         required: true
- *         description: ID of the user to get
+ *         description: chat room id
  *     tags:
- *       - User
+ *       - Chat
  *     responses:
  *       200:
- *         description: get User data successfully
- *       404:
- *         description: User not found
+ *         description: get messages of chat successfully
  *       500:
  *         description: Internal server error
  *       401:
  *         description: unauthorized access
+ *       404:
+ *         description: Not found
  */
-router.get("/:id", async (req, res) => {
+
+router.get("/:id/messages", async (req, res) => {
   try {
-    const { id } = req.params;
-    const userId = +id || 0;
-    console.log(userId, typeof userId);
-    const user = await prisma.users.findUnique({
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        // active: true,
-        // lastActive: true,
-        createdAt: true,
-        updatedAt: true,
-        // UsersConversations: true,
-        // Messages: true,
+    const roomId = req.params.id || "";
+    const userId = req.userId || "";
+
+    const room = await prisma.chatroom.findUnique({
+      where: {
+        id: roomId,
+        members: {
+          some: { id: userId },
+        },
       },
-      where: { id: userId },
+      include: {
+        messages: true,
+        messages: {
+          include: {
+            sender: true,
+            sender: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                username: true,
+                createdAt: true,
+                updatedAt: true,
+              },
+            },
+          },
+        },
+      },
     });
 
-    if (!user) {
+    if (!room) {
       return res.status(404).json({
         success: false,
-        message: "User not found",
+        message: "Chat room not found.",
       });
     }
 
+    room.messages.forEach((r) => {
+      if (r.senderId === userId) {
+        r.me = "true";
+      }
+    });
+
     res.status(200).json({
       success: true,
-      message: "Successfully retrieved user data",
-      user: user,
+      message: "Successfully retrieved chat room messages",
+      messages: room.messages,
     });
   } catch (error) {
     console.error("Error loging user:", error);
