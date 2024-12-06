@@ -1,4 +1,5 @@
 import { generateToken, verifyToken } from "../auth/index.js";
+import cookie from "cookie";
 
 function middlewareAuth(req, res, next) {
   const token = req.cookies["access_token"] || req.headers["Authorization"];
@@ -13,4 +14,33 @@ function middlewareAuth(req, res, next) {
   next();
 }
 
-export default middlewareAuth;
+function middlewareAuthSocket(socket, next) {
+  try {
+    console.log("middlewareAuthSocket");
+    
+    // Parse cookies from the handshake headers
+    const cookies = cookie.parse(socket.handshake.headers.cookie || "");
+
+    // Get the token from the access_token cookie
+    const token = cookies.access_token;
+
+    if (!token) {
+      throw new Error("Authentication error: No token provided");
+    }
+
+    // Verify the token
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      throw new Error("Authentication error: Invalid token");
+    }
+
+    // Attach user data to the socket
+    socket.userId = decoded;
+    next();
+  } catch (err) {
+    console.error(err.message);
+    next(new Error("Authentication error"));
+  }
+}
+
+export { middlewareAuth, middlewareAuthSocket };
