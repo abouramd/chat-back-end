@@ -1,6 +1,7 @@
 import express from "express";
 import prisma from "../utils/prismaClient.js";
 import { editMessageSchema, sendMessageSchema } from "../utils/Joi.js";
+import ws from "../socket/socket.js";
 
 const router = express.Router();
 
@@ -161,7 +162,19 @@ async function createMessage(req, res) {
         senderId: user.id,
         content: message,
       },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            username: true,
+          },
+        },
+      },
     });
+        
+    ws.chatMessage(roomId, newMessage);
 
     res.status(200).json({
       success: true,

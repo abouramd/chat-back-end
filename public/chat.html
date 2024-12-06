@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>WebSocket Test</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                padding: 20px;
+            }
+            .log {
+                border: 1px solid #ccc;
+                padding: 10px;
+                margin-top: 10px;
+                height: 200px;
+                overflow-y: auto;
+                background: #f9f9f9;
+            }
+            input,
+            button {
+                padding: 10px;
+                margin: 5px 0;
+            }
+            #message {
+                width: calc(100% - 120px);
+            }
+        </style>
+    </head>
+    <body>
+        <h1>WebSocket Client</h1>
+
+        <div>
+            <label for="token">Token:</label>
+            <input type="text" id="token" placeholder="Enter your JWT token" />
+            <button onclick="setToken()">Set Token</button>
+        </div>
+
+        <div>
+            <button onclick="connectWebSocket()">Connect</button>
+            <button onclick="disconnectWebSocket()">Disconnect</button>
+        </div>
+
+        <div>
+            <label for="roomId">Room:</label>
+            <input type="text" id="roomId" placeholder="Enter your room id" />
+        </div>
+
+        <div>
+            <button onclick="joinRoom()">join Room</button>
+            <button onclick="leaveRoom()">leave Room</button>
+        </div>
+
+        <div>
+            <input type="text" id="message" placeholder="Type your message" />
+            <button onclick="sendMessage()">Send</button>
+        </div>
+
+        <h3>Chat room</h3>
+        <div class="log" id="chat"></div>
+        <h3>Logs</h3>
+        <div class="log" id="log"></div>
+
+        <script>
+            let socket = null;
+            let g_roomId = null;
+
+            // Set token in a cookie
+            function setToken() {
+                const token = document.getElementById("token").value;
+                if (!token) {
+                    logMessage("Please enter a token.");
+                    return;
+                }
+                document.cookie = `access_token=${token}; path=/;`;
+                logMessage("Token set in cookie.");
+            }
+
+            function getCookie(name) {
+                const value = `; ${document.cookie}`;
+                const parts = value.split(`; ${name}=`);
+                if (parts.length === 2) return parts.pop().split(";").shift();
+            }
+
+            async function joinRoom() {
+                const roomId = document.getElementById("roomId").value;
+                if (!roomId) {
+                    logMessage("Please enter a room id.");
+                    return;
+                }
+
+                if (!socket) {
+                    logMessage("socket not connected!");
+                    return;
+                }
+
+                socket.emit("join room", roomId, (obj) => {
+                    g_roomId = roomId;
+                    logMessage(obj.message);
+                });
+                try {
+                    const chat = document.getElementById("chat");
+                    chat.innerHTML = "";
+
+                    const response = await fetch(`/chat/${roomId}/messages`, {
+                        method: "GET",
+                        headers: {
+                            Accept: "*/*",
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${getCookie("access_token")}`,
+                        },
+                    });
+
+                    const data = await response.json();
+
+                    logMessage(data.message);
+                    if (data.success === false) {
+                        return;
+                    }
+                    console.log(data);
+                    data?.messages?.forEach((msg) => {
+                        chat.innerHTML += `<div>${msg?.sender?.username + ": " + msg?.content}</div>`;
+                    });
+
+                    chat.scrollTop = chat.scrollHeight;
+                } catch (error) {
+                    logMessage("Error:", error);
+                    console.error(error);
+                }
+            }
+
+            function leaveRoom() {
+                if (!socket) {
+                    logMessage("socket not connected!");
+                    return;
+                }
+
+                socket.emit("leave room");
+                g_roomId = null;
+                const chat = document.getElementById("chat");
+                chat.innerHTML = "";
+            }
+
+            // Connect to WebSocket
+            function connectWebSocket() {
+                if (socket) {
+                    logMessage("Already connected!");
+                    return;
+                }
+
+                logMessage("Connecting to WebSocket...");
+                socket = io();
+
+                socket.on("connect", () => {
+                    logMessage("Connected to WebSocket server.");
+                });
+
+                socket.on("chat message", (msg) => {
+                    console.log(msg);
+                    logChat(msg?.sender?.username + ": " + msg?.content);
+                });
+
+                socket.on("disconnect", () => {
+                    logMessage("Disconnected from WebSocket server.");
+                });
+
+                socket.on("connect_error", (err) => {
+                    logMessage(`Connection error: ${err.message}`);
+                });
+            }
+
+            // Disconnect from WebSocket
+            function disconnectWebSocket() {
+                if (!socket) {
+                    logMessage("Not connected!");
+                    return;
+                }
+                socket.disconnect();
+                socket = null;
+                logMessage("Disconnected from WebSocket.");
+            }
+
+            // Send a message to the server
+            function sendMessage() {
+                const message = document.getElementById("message").value;
+                if (!socket || !socket.connected) {
+                    logMessage("Not connected! Please connect first.");
+                    return;
+                }
+                if (!message) {
+                    logMessage("Message cannot be empty.");
+                    return;
+                }
+                if (!g_roomId) {
+                    logMessage("You are not in a room!");
+                    return;
+                }
+
+                fetch("/message", {
+                    method: "POST",
+                    headers: {
+                        Accept: "*/*",
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        roomId: g_roomId,
+                        message,
+                    }),
+                })
+                    .then((response) => response.json())
+                    .then((data) => console.log(data))
+                    .catch((error) => logMessage(("Error:", error)));
+            }
+
+            // Log messages in the log box
+            function logMessage(msg) {
+                const log = document.getElementById("log");
+                log.innerHTML += `<div>${msg}</div>`;
+                log.scrollTop = log.scrollHeight;
+            }
+
+            // Log messages in the log box
+            function logChat(msg) {
+                const chat = document.getElementById("chat");
+                chat.innerHTML += `<div>${msg}</div>`;
+                chat.scrollTop = chat.scrollHeight;
+            }
+        </script>
+
+        <!-- Include Socket.IO -->
+        <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    </body>
+</html>
