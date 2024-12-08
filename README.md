@@ -39,5 +39,5 @@ npm install --include=dev # to install the dependencies
 
 npx prisma migrate # to create the database schema
 
-npm run dev # to run the project
+npm run start # to run the project
 ```

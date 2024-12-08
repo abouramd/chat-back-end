@@ -174,7 +174,7 @@ async function createMessage(req, res) {
       },
     });
         
-    ws.chatMessage(roomId, newMessage);
+    ws.chatMessage(roomId, newMessage, "add");
 
     res.status(200).json({
       success: true,
@@ -222,6 +222,8 @@ async function editMessage(req, res) {
       where: { id, senderId: userId },
       data: { content: message },
     });
+    
+    ws.chatMessage(roomId, updatedMessage, "update");
 
     res.status(200).json({
       success: true,
@@ -257,6 +259,8 @@ async function deleteMessage(req, res) {
     await prisma.message.delete({
       where: { id, senderId: userId },
     });
+    
+    ws.chatMessage(roomId, messageExists, "delete");
 
     res.status(200).json({
       success: true,

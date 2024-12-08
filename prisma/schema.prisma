@@ -18,8 +18,8 @@ model User {
   updatedAt     DateTime       @updatedAt
   chatrooms     Chatroom[]     @relation("UserChatrooms")
   messages      Message[]
-  notifications Notification[]
-  files         File[]
+  // notifications Notification[]
+  // files         File[]
 
   /// Indexes for search optimization
   @@index([username], map: "idx_username")
@@ -33,7 +33,7 @@ model Chatroom {
   updatedAt DateTime  @updatedAt
   members   User[]    @relation("UserChatrooms")
   messages  Message[]
-  files     File[]
+  // files     File[]
 }
 
 model Message {
@@ -47,23 +47,23 @@ model Message {
   updatedAt  DateTime @updatedAt
 }
 
-model Notification {
-  id        String   @id @default(uuid())
-  type      String // e.g., "message", "system"
-  content   String
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
-}
+// model Notification {
+//   id        String   @id @default(uuid())
+//   type      String // e.g., "message", "system"
+//   content   String
+//   userId    String
+//   user      User     @relation(fields: [userId], references: [id])
+//   isRead    Boolean  @default(false)
+//   createdAt DateTime @default(now())
+// }
 
-model File {
-  id           String   @id @default(uuid())
-  filename     String
-  url          String
-  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
-  uploadedById String
-  chatroomId   String
-  chatroom     Chatroom @relation(fields: [chatroomId], references: [id])
-  createdAt    DateTime @default(now())
-}
+// model File {
+//   id           String   @id @default(uuid())
+//   filename     String
+//   url          String
+//   uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+//   uploadedById String
+//   chatroomId   String
+//   chatroom     Chatroom @relation(fields: [chatroomId], references: [id])
+//   createdAt    DateTime @default(now())
+// }

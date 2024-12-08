@@ -31,9 +31,16 @@
         <h1>WebSocket Client</h1>
 
         <div>
-            <label for="token">Token:</label>
-            <input type="text" id="token" placeholder="Enter your JWT token" />
-            <button onclick="setToken()">Set Token</button>
+            <label for="username">Username:</label>
+            <input type="text" id="username" placeholder="Enter your username" />
+        </div>
+        <div>
+            <label for="password">Password:</label>
+            <input type="password" id="password" placeholder="Enter your password" />
+        </div>
+        <div>
+            <button onclick="login()">Login</button>
+            <button onclick="logout()">Logout</button>
         </div>
 
         <div>
@@ -65,15 +72,57 @@
             let socket = null;
             let g_roomId = null;
 
-            // Set token in a cookie
-            function setToken() {
-                const token = document.getElementById("token").value;
-                if (!token) {
-                    logMessage("Please enter a token.");
+            // Login function to authenticate user and set token
+            async function login() {
+                const username = document.getElementById("username").value;
+                const password = document.getElementById("password").value;
+        
+                if (!username || !password) {
+                    logMessage("Please enter username and password.");
                     return;
                 }
-                document.cookie = `access_token=${token}; path=/;`;
-                logMessage("Token set in cookie.");
+        
+                try {
+                    const response = await fetch("/auth/login", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({ username, password }),
+                    });
+        
+                    const data = await response.json();
+        
+                    if (data.success) {
+                        logMessage("Login successful! Token set.");
+                        connectWebSocket(); // Connect after login
+                    } else {
+                        logMessage("Login failed: " + data.message);
+                    }
+                } catch (error) {
+                    logMessage("Error during login: " + error.message);
+                }
+            }
+        
+            // Logout function to clear token and disconnect WebSocket
+            async function logout() {
+                try {
+                    const response = await fetch("/auth/logout", {
+                        method: "GET",
+                        credentials: "include", // Ensure cookies are sent with the request
+                    });
+        
+                    const data = await response.json();
+        
+                    if (data.success) {
+                        logMessage("Logged out successfully. Token cleared.");
+                        disconnectWebSocket(); // Disconnect after logout
+                    } else {
+                        logMessage("Logout failed: " + data.message);
+                    }
+                } catch (error) {
+                    logMessage("Error during logout: " + error.message);
+                }
             }
 
             function getCookie(name) {

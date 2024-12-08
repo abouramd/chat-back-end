@@ -237,6 +237,20 @@ router.post("/:id/add", async (req, res) => {
         members: { connect: { id: user.id } },
       },
     });
+    
+    ws.notificationForRoom(room.id, {
+      type: "chatroom",
+      message: `${user.name} has joined the chat room`,
+      action: "join",
+      user: ({id, email, username, name} = user),
+    });
+    
+    ws.notificationForUser(user.id, {
+      type: "chatroom",
+      message: `You have been added to the chat room`,
+      action: "you join",
+      chatroom: room,
+    });
 
     res.status(200).json({
       success: true,
@@ -321,6 +335,21 @@ router.get("/:id/leave", async (req, res) => {
       data: {
         members: { disconnect: { id: user.id } },
       },
+    });
+    
+    ws.notificationForRoom(room.id, {
+      type: "chatroom",
+      message: `${user.name} has left the chat room`,
+      action: "leave",
+      userId: user.id,
+      chatroom: room,
+    });
+    
+    ws.notificationForUser(user.id, {
+      type: "chatroom",
+      message: `You have left the chat room ${room.name}`,
+      action: "you leave",
+      chatroom: room,
     });
 
     res.status(200).json({
