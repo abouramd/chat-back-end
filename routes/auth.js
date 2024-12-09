@@ -3,6 +3,7 @@ import { generateToken } from "../auth/index.js";
 import prisma from "../utils/prismaClient.js";
 import bcrypt from "bcrypt";
 import { loginSchema, registerSchema } from "../utils/Joi.js";
+import { middlewareAuth } from "../middleware/index.js";
 const router = express.Router();
 
 /**
@@ -201,6 +202,28 @@ router.get("/logout", async (req, res) => {
   res
     .status(200)
     .json({ success: true, message: "You have Logout successfully." });
+});
+
+/**
+ * @swagger
+ * /auth/isauth:
+ *   get:
+ *     summary: check user if is auth
+ *     description: check user if is auth.
+ *     tags:
+ *       - Authentication
+ *     responses:
+ *       200:
+ *         description: User is auth
+ *       401:
+ *         description: User not auth
+ *       500:
+ *         description: Internal server error
+ */
+router.get("/isauth", async (req, res) => {
+  middlewareAuth(req, res, () => {
+    return res.status(200).json({ success: true, message: "You are auth" });
+  });
 });
 
 export default router;
