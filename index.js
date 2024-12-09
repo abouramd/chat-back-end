@@ -11,6 +11,7 @@ import swaggerUi from "swagger-ui-express";
 import { createServer } from "node:http";
 import ws from "./socket/socket.js";
 import { Server } from "socket.io";
+import morgan from "morgan";
 
 // load .env var
 configDotenv();
@@ -25,6 +26,7 @@ ws.listen();
 const port = process.env.PORT || 3000;
 
 app.use(cookieParser());
+app.use(morgan("tiny"));
 app.use(express.static("public"));
 app.use(express.json({ limit: "10mb" }));
 
